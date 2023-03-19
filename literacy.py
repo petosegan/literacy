@@ -36,7 +36,7 @@ def generate_docstring(function_signature):
         temperature=0.5,
     )
     logger.debug(response)
-    response_text = response.choices[0].content.strip()
+    response_text = response.choices[0].message.content.strip()
 
     # response_text = """foo"""
     logger.debug(response_text)
@@ -61,9 +61,7 @@ def process_file(filename):
             function_signature = f"def {function_name}({ast.unparse(function.args)}):"
             docstring = generate_docstring(function_signature)
             content = content.replace(
-                content=content.replace(
-                    function_signature, f'{function_signature}\n    """{docstring}"""'
-                )
+                function_signature, f'{function_signature}\n    """{docstring}"""'
             )
 
     # with open(filename, "w") as file:
