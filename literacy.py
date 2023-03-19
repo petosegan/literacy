@@ -7,9 +7,6 @@ import subprocess
 import ast
 import sys
 
-import sys
-
-subprocess.run(["pip", "install", "gitignore-parser"])
 
 import subprocess
 
@@ -26,12 +23,19 @@ openai.api_key = OPENAI_API_KEY
 
 
 def generate_docstring(function_signature):
-    prompt = f"Write a docstring for the Python function with the following signature:\n{function_signature}"
+    prompt = f"""I want you to write a docstring for a Python function.
+        If the function is very simple, a one-line docstring is fine.
+        If the function is not very simple, please include lines for the arguments and return values.
+        If the function is complicated, please include examples of inputs and outputs.
+        Limit the length of lines to 80 characters or less.
+        Please return just the docstring, surrounded by triple quotes.
+        Here is the code for the function:
+        {function_signature}"""
     logger.debug(prompt)
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[{"role": "user", "content": prompt}],
-        max_tokens=100,
+        max_tokens=1000,
         n=1,
         temperature=0.5,
     )
@@ -49,23 +53,22 @@ def process_file(filename):
     with open(filename, "r") as file:
         content = file.read()
 
+    result = str(content)
     tree = ast.parse(content)
     functions = [node for node in tree.body if isinstance(node, ast.FunctionDef)]
 
     for function in functions:
-        if not any(
-            isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Str)
-            for stmt in function.body
-        ):
-            function_name = function.name
-            function_signature = f"def {function_name}({ast.unparse(function.args)}):"
-            docstring = generate_docstring(function_signature)
-            content = content.replace(
+        if not ast.get_docstring(function):
+            # logger.debug(ast.get_source_segment(content, function))
+            function_source = ast.get_source_segment(content, function)
+            function_signature = f"def {function.name}({ast.unparse(function.args)}):"
+            docstring = generate_docstring(function_source).replace('"', "")
+            result = result.replace(
                 function_signature, f'{function_signature}\n    """{docstring}"""'
             )
 
-    # with open(filename, "w") as file:
-    #     file.write(content)
+    with open(filename, "w") as file:
+        file.write(result)
 
 
 def scan_codebase(directory):
@@ -91,21 +94,6 @@ def find_git_root(path):
         if parent_dir == path:
             return None
         return find_git_root(parent_dir)
-
-
-# def scan_codebase(path):
-#     git_root = find_git_root(path)
-#     gitignore_path = os.path.join(git_root, ".gitignore")
-#     gitignore = parse_gitignore(gitignore_path)
-#     for dirpath, dirnames, filenames in os.walk(path):
-#         # remove directories that match the patterns in the .gitignore file
-#         dirnames[:] = [d for d in dirnames if not gitignore(os.path.join(dirpath, d))]
-#         # scan files that are not ignored by .gitignore
-#         for filename in filenames:
-#             if not
-#             f for f in filenames if not gitignore(os.path.join(dirpath, f))
-#         ]:
-#             process_file(os.path.join(dirpath, filename))
 
 
 if __name__ == "__main__":
