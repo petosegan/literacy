@@ -1,2 +1,3 @@
-openai
-pyjson5
+openai==0.27.2
+pyjson5==1.6.2
+gitignore-parser==0.1.3
