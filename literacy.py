@@ -14,7 +14,7 @@ import openai
 import logging
 from gitignore_parser import parse_gitignore
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Set your OpenAI API key
@@ -22,7 +22,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "api-key")
 openai.api_key = OPENAI_API_KEY
 
 
-def generate_docstring(function_signature):
+def generate_docstring(function_name: str, function_signature: str):
     """
     Generate a docstring for a Python function using OpenAI's GPT-3 natural language processing model.
 
@@ -36,6 +36,7 @@ def generate_docstring(function_signature):
         >>> generate_docstring('def add(x: int, y: int) -> int:')
         'Add two integers together and return the result.'
     """
+    logger.info("Generating docstring for %s", function_name)
     prompt = Path("prompt.txt").read_text() + function_signature
     logger.debug(prompt)
     response = openai.ChatCompletion.create(
@@ -129,7 +130,9 @@ def process_file(filename):
             # logger.debug(ast.get_source_segment(content, function))
             function_source = ast.get_source_segment(content, function)
             function_signature = f"def {function.name}({ast.unparse(function.args)}):"
-            docstring = generate_docstring(function_source).replace('"', "")
+            docstring = generate_docstring(function.name, function_source).replace(
+                '"', ""
+            )
             result = result.replace(
                 function_signature, f'{function_signature}\n    """{docstring}"""'
             )
