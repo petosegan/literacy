@@ -3,6 +3,7 @@ Scan a codebase and add use openai to add docstrings for all functions.
 """
 import os
 import subprocess
+import argparse
 
 import ast
 import sys
@@ -22,7 +23,8 @@ openai.api_key = OPENAI_API_KEY
 
 
 def generate_docstring(function_signature):
-    """Generate a docstring for a Python function using OpenAI's GPT-3 natural language processing model.
+    """
+    Generate a docstring for a Python function using OpenAI's GPT-3 natural language processing model.
 
     Args:
         function_signature (str): The signature of the function for which to generate a docstring.
@@ -32,7 +34,8 @@ def generate_docstring(function_signature):
 
     Example:
         >>> generate_docstring('def add(x: int, y: int) -> int:')
-        'Add two integers together and return the result.'"""
+        'Add two integers together and return the result.'
+    """
     prompt = Path("prompt.txt").read_text() + function_signature
     logger.debug(prompt)
     response = openai.ChatCompletion.create(
@@ -143,12 +146,7 @@ def scan_codebase(directory):
         directory (str): The path to the directory to scan.
 
     Returns:
-        None.
-
-    Examples:
-        >>> scan_codebase(/path/to/codebase)
-        # Scans the codebase directory for Python files and processes them if they are
-        # not ignored by Git."""
+        None."""
     git_root = find_git_root(directory)
     gitignore_path = os.path.join(git_root, ".gitignore")
     logger.debug("GITIGNORE: %s", gitignore_path)
@@ -161,7 +159,8 @@ def scan_codebase(directory):
 
 
 def find_git_root(path):
-    """Find the root directory of a Git repository given a path.
+    """
+    Find the root directory of a Git repository given a path.
 
     Args:
         path (str): The starting directory to search for the Git root.
@@ -171,7 +170,8 @@ def find_git_root(path):
 
     Example:
         >>> find_git_root('/home/user/project/subdir')
-        '/home/user/project'"""
+        '/home/user/project'
+    """
     try:
         output = subprocess.check_output(
             ["git", "rev-parse", "--show-toplevel"], cwd=path
@@ -185,5 +185,7 @@ def find_git_root(path):
 
 
 if __name__ == "__main__":
-    codebase_directory = "/home/will/code/literacy"
-    scan_codebase(codebase_directory)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("codebase_directory", help="The directory to scan")
+    args = parser.parse_args()
+    scan_codebase(args.codebase_directory)
