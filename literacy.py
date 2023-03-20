@@ -15,6 +15,7 @@ import os
 import subprocess
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from display import FileStatusDisplay
 from colorama import init, Fore, Back, Style
 
 init(autoreset=True)
@@ -137,7 +138,11 @@ def process_file(filename):
 
     result = str(content)
     tree = ast.parse(content)
-    functions = [node for node in tree.body if isinstance(node, ast.FunctionDef)]
+    functions = [
+        node
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef) and not ast.get_docstring(node)
+    ]
 
     def update_function(function, content):
         if not ast.get_docstring(function):
@@ -155,10 +160,9 @@ def process_file(filename):
             )
         return None, None, None
 
-    print(Fore.YELLOW + f"Processing {filename}")
-    for function in functions:
-        if not ast.get_docstring(function):
-            print(Fore.YELLOW + f"Processing {function.name}")
+    # Display function names in yellow
+    display = FileStatusDisplay(filename, [function.name for function in functions])
+    display.display()
 
     with ThreadPoolExecutor() as executor:
         futures = [
@@ -170,8 +174,10 @@ def process_file(filename):
             function_name, old_signature, new_signature = future.result()
             if old_signature and new_signature:
                 result = result.replace(old_signature, new_signature)
-                print(Fore.GREEN + f"Added docstring to {function_name}")
 
+                display.update(function_name, "green")
+
+    display.finish()
     with open(filename, "w") as file:
         file.write(result)
 
