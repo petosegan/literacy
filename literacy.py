@@ -15,6 +15,9 @@ import os
 import subprocess
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from colorama import init, Fore, Back, Style
+
+init(autoreset=True)
 
 import ast
 import sys
@@ -47,7 +50,7 @@ def generate_docstring(function_name: str, function_signature: str):
         >>> generate_docstring('def add(x: int, y: int) -> int:')
         'Add two integers together and return the result.'
     """
-    logger.info("Generating docstring for %s", function_name)
+    logger.debug("Generating docstring for %s", function_name)
     prompt = Path("prompt.txt").read_text() + function_signature
     logger.debug(prompt)
     response = openai.ChatCompletion.create(
@@ -140,12 +143,22 @@ def process_file(filename):
         if not ast.get_docstring(function):
             # logger.debug(ast.get_source_segment(content, function))
             function_source = ast.get_source_segment(content, function)
-            function_signature = f"def {function.name}({ast.unparse(function.args)}):"
+            old_signature = f"def {function.name}({ast.unparse(function.args)}):"
             docstring = generate_docstring(function.name, function_source).replace(
                 '"', ""
             )
-            return function_signature, f'{function_signature}\n    """{docstring}"""'
-        return None, None
+            new_signature = f'{old_signature}\n    """{docstring}"""'
+            return (
+                function.name,
+                old_signature,
+                new_signature,
+            )
+        return None, None, None
+
+    print(Fore.YELLOW + f"Processing {filename}")
+    for function in functions:
+        if not ast.get_docstring(function):
+            print(Fore.YELLOW + f"Processing {function.name}")
 
     with ThreadPoolExecutor() as executor:
         futures = [
@@ -154,9 +167,10 @@ def process_file(filename):
         ]
 
         for future in as_completed(futures):
-            function_signature, docstring = future.result()
-            if function_signature and docstring:
-                result = result.replace(function_signature, docstring)
+            function_name, old_signature, new_signature = future.result()
+            if old_signature and new_signature:
+                result = result.replace(old_signature, new_signature)
+                print(Fore.GREEN + f"Added docstring to {function_name}")
 
     with open(filename, "w") as file:
         file.write(result)
