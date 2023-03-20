@@ -14,6 +14,7 @@ $ python generate_docstrings.py codebase_directory
 import os
 import subprocess
 import argparse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import ast
 import sys
@@ -135,7 +136,7 @@ def process_file(filename):
     tree = ast.parse(content)
     functions = [node for node in tree.body if isinstance(node, ast.FunctionDef)]
 
-    for function in functions:
+    def update_function(function, content):
         if not ast.get_docstring(function):
             # logger.debug(ast.get_source_segment(content, function))
             function_source = ast.get_source_segment(content, function)
@@ -143,9 +144,19 @@ def process_file(filename):
             docstring = generate_docstring(function.name, function_source).replace(
                 '"', ""
             )
-            result = result.replace(
-                function_signature, f'{function_signature}\n    """{docstring}"""'
-            )
+            return function_signature, f'{function_signature}\n    """{docstring}"""'
+        return None, None
+
+    with ThreadPoolExecutor() as executor:
+        futures = [
+            executor.submit(update_function, function, content)
+            for function in functions
+        ]
+
+        for future in as_completed(futures):
+            function_signature, docstring = future.result()
+            if function_signature and docstring:
+                result = result.replace(function_signature, docstring)
 
     with open(filename, "w") as file:
         file.write(result)
