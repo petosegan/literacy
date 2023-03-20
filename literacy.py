@@ -21,10 +21,6 @@ import subprocess
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from display import FileStatusDisplay
-from colorama import init, Fore, Back, Style
-
-init(autoreset=True)
-
 import ast
 import sys
 
@@ -68,8 +64,6 @@ def generate_docstring(function_name: str, function_signature: str):
     )
     logger.debug(response)
     response_text = response.choices[0].message.content.strip()
-
-    # response_text = """foo"""
     logger.debug(response_text)
     sys.stdout.flush()
     return response_text
@@ -150,20 +144,15 @@ def process_file(filename):
     ]
 
     def update_function(function, content):
-        if not ast.get_docstring(function):
-            # logger.debug(ast.get_source_segment(content, function))
-            function_source = ast.get_source_segment(content, function)
-            old_signature = f"def {function.name}({ast.unparse(function.args)}):"
-            docstring = generate_docstring(function.name, function_source).replace(
-                '"', ""
-            )
-            new_signature = f'{old_signature}\n    """{docstring}"""'
-            return (
-                function.name,
-                old_signature,
-                new_signature,
-            )
-        return None, None, None
+        function_source = ast.get_source_segment(content, function)
+        old_signature = f"def {function.name}({ast.unparse(function.args)}):"
+        docstring = generate_docstring(function.name, function_source).replace('"', "")
+        new_signature = f'{old_signature}\n    """{docstring}"""'
+        return (
+            function.name,
+            old_signature,
+            new_signature,
+        )
 
     # Display function names in yellow
     display = FileStatusDisplay(filename, [function.name for function in functions])
