@@ -99,6 +99,8 @@ python literacy.py /path/to/your/codebase
 
 Replace /path/to/your/codebase with the path to the directory containing your Python codebase.
 
+### ToDo
+* Extend to module, class, and method docstrings
 ### Contributing
 Feel free to open issues or submit pull requests for bug fixes or feature enhancements.
 
