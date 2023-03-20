@@ -1,7 +1,12 @@
 """
-This script scans a Python codebase and generates missing docstrings for all functions using OpenAI's GPT-3.5 natural language processing model.
+This script scans a Python codebase and generates missing docstrings for all functions 
+using OpenAI's GPT-3.5 natural language processing model.
 
-It searches for Python files in the specified codebase directory, ignoring files listed in the .gitignore file. For each file, it extracts functions without docstrings and generates them using the OpenAI API. The generated docstrings are then added to the functions and the modified file content is written back to the original file.
+It searches for Python files in the specified codebase directory, 
+ignoring files listed in the .gitignore file. For each file, it extracts 
+functions without docstrings and generates them using the OpenAI API. 
+The generated docstrings are then added to the functions and the modified 
+file content is written back to the original file.
 
 Dependencies:
 - openai: The OpenAI Python library (https://github.com/openai/openai).
