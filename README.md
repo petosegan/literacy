@@ -102,8 +102,6 @@ Replace /path/to/your/codebase with the path to the directory containing your Py
 ### ToDo
 * Extend to module, class, and method docstrings
 * Add a GIF of script in action
-* API Timeouts
-* API Cost Counter
 ### Contributing
 Feel free to open issues or submit pull requests for bug fixes or feature enhancements.
 
