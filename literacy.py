@@ -26,6 +26,7 @@ import sys
 from typing import Tuple
 from pathlib import Path
 
+import tiktoken
 import openai
 import logging
 from gitignore_parser import parse_gitignore
@@ -40,10 +41,20 @@ openai.api_key = OPENAI_API_KEY
 MODEL_NAME = "gpt-3.5-turbo"
 TOKEN_COST = 0.002 / 1000  # dollars per token
 TIMEOUT = 20  # seconds
+ENCODER = tiktoken.encoding_for_model(MODEL_NAME)
+
+# This is a WAG
+COST_MULTIPLER = 1.5  # increase the cost of the query to account for the result
 
 
 class TimeoutError(Exception):
     pass
+
+
+def compute_cost(function_source: str) -> float:
+    """Compute the cost of the query to the OpenAI API."""
+    n_tokens = len(ENCODER.encode(function_source))
+    return n_tokens * TOKEN_COST * COST_MULTIPLER
 
 
 def generate_docstring(
@@ -86,7 +97,7 @@ def generate_docstring(
     return response_text, cost
 
 
-def process_file(filename) -> float:
+def process_file(filename, dryrun: bool = False) -> float:
     """Process a Python file and add missing docstrings to its functions.
 
     Args:
@@ -163,6 +174,9 @@ def process_file(filename) -> float:
     def update_function(function, content):
         function_source = ast.get_source_segment(content, function)
         old_signature = f"def {function.name}({ast.unparse(function.args)}):"
+        if dryrun:
+            cost = compute_cost(function_source)
+            return None, None, None, cost
         docstring, cost = generate_docstring(function.name, function_source)
         docstring = docstring.replace('"', "")
         new_signature = f'{old_signature}\n    """{docstring}"""'
@@ -189,17 +203,18 @@ def process_file(filename) -> float:
                 if old_signature and new_signature:
                     result = result.replace(old_signature, new_signature)
 
-                    display.update(function_name, "green")
-                    total_cost += cost
+                display.update(function_name, "green")
+                total_cost += cost
 
     display.finish()
     logger.info("File cost: $%.4f", total_cost)
-    with open(filename, "w") as file:
-        file.write(result)
+    if not dryrun:
+        with open(filename, "w") as file:
+            file.write(result)
     return total_cost
 
 
-def scan_codebase(directory):
+def scan_codebase(directory, dryrun: bool = False):
     """
     Scan a directory for Python files and process them if they are not ignored by Git.
 
@@ -217,7 +232,7 @@ def scan_codebase(directory):
         for file in files:
             file_path = os.path.join(root, file)
             if file.endswith(".py") and not matches_gitignore(file_path):
-                file_cost = process_file(file_path)
+                file_cost = process_file(file_path, dryrun=dryrun)
                 codebase_cost += file_cost
     logger.info("Codebase cost: $%.4f", codebase_cost)
 
@@ -251,5 +266,6 @@ def find_git_root(path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("codebase_directory", help="The directory to scan")
+    parser.add_argument("--dryrun", action="store_true", help="Compute costs only")
     args = parser.parse_args()
-    scan_codebase(args.codebase_directory)
+    scan_codebase(args.codebase_directory, dryrun=args.dryrun)
