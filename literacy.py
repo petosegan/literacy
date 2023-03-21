@@ -39,6 +39,11 @@ openai.api_key = OPENAI_API_KEY
 
 MODEL_NAME = "gpt-3.5-turbo"
 TOKEN_COST = 0.002 / 1000  # dollars per token
+TIMEOUT = 20  # seconds
+
+
+class TimeoutError(Exception):
+    pass
 
 
 def generate_docstring(
@@ -61,13 +66,17 @@ def generate_docstring(
     logger.debug("Generating docstring for %s", function_name)
     prompt = Path("prompt.txt").read_text() + function_signature
     logger.debug(prompt)
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=1000,
-        n=1,
-        temperature=0.5,
-    )
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=1000,
+            n=1,
+            temperature=0.5,
+            request_timeout=TIMEOUT,
+        )
+    except openai.error.Timeout:
+        raise TimeoutError(function_name)
     logger.debug(response)
     response_text = response.choices[0].message.content.strip()
     n_tokens = response.usage.total_tokens
@@ -171,12 +180,17 @@ def process_file(filename) -> float:
         ]
 
         for future in as_completed(futures):
-            function_name, old_signature, new_signature, cost = future.result()
-            if old_signature and new_signature:
-                result = result.replace(old_signature, new_signature)
+            try:
+                function_name, old_signature, new_signature, cost = future.result()
+            except TimeoutError as e:
+                function_name = e.args[0]
+                display.update(function_name, "red")
+            else:
+                if old_signature and new_signature:
+                    result = result.replace(old_signature, new_signature)
 
-                display.update(function_name, "green")
-                total_cost += cost
+                    display.update(function_name, "green")
+                    total_cost += cost
 
     display.finish()
     logger.info("File cost: $%.4f", total_cost)

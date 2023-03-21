@@ -29,6 +29,8 @@ class FileStatusDisplay:
                 print(Fore.GREEN + f"  {function}" + "✓")
             elif self.status[function] == "yellow":
                 print(Fore.YELLOW + f"  {function}")
+            elif self.status[function] == "red":
+                print(Fore.RED + f"  {function}" + "✗")
         sys.stdout.flush()
 
     def clear(self):
