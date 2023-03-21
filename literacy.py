@@ -31,8 +31,21 @@ import openai
 import logging
 from gitignore_parser import parse_gitignore
 
-logging.basicConfig(level=logging.INFO)
+log_format = "%(asctime)s - %(levelname)s - %(message)s"
+logging.basicConfig(level=logging.INFO, format=log_format, stream=sys.stdout)
 logger = logging.getLogger(__name__)
+
+
+def configure_logging_level(verbosity: int) -> None:
+    if verbosity == 0:
+        logger.setLevel(logging.ERROR)
+    elif verbosity == 1:
+        logger.setLevel(logging.WARNING)
+    elif verbosity == 2:
+        logger.setLevel(logging.INFO)
+    elif verbosity >= 3:
+        logger.setLevel(logging.DEBUG)
+
 
 # Set your OpenAI API key
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "api-key")
@@ -269,5 +282,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("codebase_directory", help="The directory to scan")
     parser.add_argument("--dryrun", action="store_true", help="Compute costs only")
+    parser.add_argument(
+        "-v",
+        "--verbosity",
+        action="count",
+        default=0,
+        help="Increase output verbosity (e.g., -v, -vv, -vvv)",
+    )
     args = parser.parse_args()
+    configure_logging_level(args.verbosity)
     scan_codebase(args.codebase_directory, dryrun=args.dryrun)

@@ -107,6 +107,16 @@ python literacy.py /path/to/your/codebase --dryrun
 ### ToDo
 * Extend to module, class, and method docstrings
 * Add a GIF of script in action
+* Extend to add type signatures
+
+### ToDo (GPT4 suggestions)
+* Make token cost and model name configurable through environment variables or command-line arguments.
+* Separate concerns into different classes or modules.
+* Add error handling and retries for API calls.
+* Add a progress bar for processing large codebases using libraries like tqdm.
+* Write unit tests and integration tests for the script.
+* Create a configuration file for managing script settings.
+
 ### Contributing
 Feel free to open issues or submit pull requests for bug fixes or feature enhancements.
 
