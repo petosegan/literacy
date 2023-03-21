@@ -3,18 +3,25 @@ import time
 import sys
 import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from enum import Enum
 
 init(autoreset=True)
+
+
+class Status(Enum):
+    FINISHED = "green"
+    PENDING = "yellow"
+    FAILED = "red"
 
 
 class FileStatusDisplay:
     def __init__(self, file, functions):
         self.file = file
         self.functions = functions
-        self.status = {function: "yellow" for function in functions}
+        self.status = {function: Status.PENDING for function in functions}
         self.complete = False
 
-    def update(self, function, status):
+    def update(self, function: str, status: Status):
         self.status[function] = status
         self.clear()
         self.display()
@@ -25,11 +32,11 @@ class FileStatusDisplay:
         else:
             print(Fore.YELLOW + f"Processing {self.file}:")
         for function in self.functions:
-            if self.status[function] == "green":
+            if self.status[function] == Status.FINISHED:
                 print(Fore.GREEN + f"  {function}" + "✓")
-            elif self.status[function] == "yellow":
+            elif self.status[function] == Status.PENDING:
                 print(Fore.YELLOW + f"  {function}")
-            elif self.status[function] == "red":
+            elif self.status[function] == Status.FAILED:
                 print(Fore.RED + f"  {function}" + "✗")
         sys.stdout.flush()
 
@@ -60,7 +67,7 @@ def test_with_concurrency():
 
         for future in as_completed(futures):
             function_name = future.result()
-            display.update(function_name, "green")
+            display.update(function_name, Status.FINISHED)
 
     display.finish()
 

@@ -20,10 +20,10 @@ import os
 import subprocess
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from display import FileStatusDisplay
+from display import FileStatusDisplay, Status
 import ast
 import sys
-from typing import Tuple
+from typing import Tuple, Optional
 from pathlib import Path
 
 import tiktoken
@@ -97,7 +97,7 @@ def generate_docstring(
     return response_text, cost
 
 
-def process_file(filename, dryrun: bool = False) -> float:
+def process_file(filename: str, dryrun: bool = False) -> float:
     """Process a Python file and add missing docstrings to its functions.
 
     Args:
@@ -171,7 +171,9 @@ def process_file(filename, dryrun: bool = False) -> float:
         if isinstance(node, ast.FunctionDef) and not ast.get_docstring(node)
     ]
 
-    def update_function(function, content):
+    def update_function(
+        function: ast.FunctionDef, content: str
+    ) -> Tuple[Optional[str], Optional[str], Optional[str], float]:
         function_source = ast.get_source_segment(content, function)
         old_signature = f"def {function.name}({ast.unparse(function.args)}):"
         if dryrun:
@@ -198,12 +200,12 @@ def process_file(filename, dryrun: bool = False) -> float:
                 function_name, old_signature, new_signature, cost = future.result()
             except TimeoutError as e:
                 function_name = e.args[0]
-                display.update(function_name, "red")
+                display.update(function_name, Status.FAILED)
             else:
                 if old_signature and new_signature:
                     result = result.replace(old_signature, new_signature)
 
-                display.update(function_name, "green")
+                display.update(function_name, Status.FINISHED)
                 total_cost += cost
 
     display.finish()
@@ -214,7 +216,7 @@ def process_file(filename, dryrun: bool = False) -> float:
     return total_cost
 
 
-def scan_codebase(directory, dryrun: bool = False):
+def scan_codebase(directory: str, dryrun: bool = False) -> None:
     """
     Scan a directory for Python files and process them if they are not ignored by Git.
 
@@ -237,7 +239,7 @@ def scan_codebase(directory, dryrun: bool = False):
     logger.info("Codebase cost: $%.4f", codebase_cost)
 
 
-def find_git_root(path):
+def find_git_root(path: str) -> Optional[str]:
     """
     Find the root directory of a Git repository given a path.
 
