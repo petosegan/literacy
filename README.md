@@ -99,6 +99,11 @@ python literacy.py /path/to/your/codebase
 
 Replace /path/to/your/codebase with the path to the directory containing your Python codebase.
 
+You can also do a dry run to estimate the cost of documenting your codebase without running any OpenAI queries. The cost is only an estimate because it will depend on the size of the docstrings that are returned by the API.
+```bash
+python literacy.py /path/to/your/codebase --dryrun
+```
+
 ### ToDo
 * Extend to module, class, and method docstrings
 * Add a GIF of script in action
