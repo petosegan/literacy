@@ -60,6 +60,10 @@ ENCODER = tiktoken.encoding_for_model(MODEL_NAME)
 # This is a WAG
 COST_MULTIPLER = 1.5  # increase the cost of the query to account for the result
 
+THIS_DIR = Path(__file__).parent
+CONFIG_DIR = THIS_DIR.parent / "config"
+PROMPT_FILE = CONFIG_DIR / "prompt.txt"
+
 
 class TimeoutError(Exception):
     pass
@@ -110,7 +114,7 @@ def generate_docstring(
         'Add two integers together and return the result.'
     """
     logger.debug("Generating docstring for %s", function_name)
-    prompt = Path("../config/prompt.txt").read_text() + function_signature
+    prompt = Path(PROMPT_FILE).read_text() + function_signature
     logger.debug(prompt)
     try:
         response = openai.ChatCompletion.create(
