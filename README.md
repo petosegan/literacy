@@ -75,7 +75,7 @@ Literacy generated this docstring for its own core function:
         """
 ```
 ### Requirements
-* Python 3.7 or higher
+* Python 3.9 or higher
 * openai package
 * gitignore_parser package
 
