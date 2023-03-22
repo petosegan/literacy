@@ -16,6 +16,7 @@ Usage:
 $ python generate_docstrings.py codebase_directory
 """
 
+import re
 import os
 import subprocess
 import argparse
@@ -68,6 +69,27 @@ def compute_cost(function_source: str) -> float:
     """Compute the cost of the query to the OpenAI API."""
     n_tokens = len(ENCODER.encode(function_source))
     return n_tokens * TOKEN_COST * COST_MULTIPLER
+
+
+def substitute_docstrings(function_source: str, docstring_map: dict) -> str:
+    """Replace the docstrings in the function source with the generated docstrings."""
+    for function_name, docstring in docstring_map.items():
+        pattern = rf"(def {function_name}\(.*\):)"
+        replacement = rf"\1\n    \"\"\"{docstring}\"\"\""
+
+        content = re.sub(pattern, replacement, content, flags=re.MULTILINE)
+    return function_source
+
+
+def insert_docstrings(file_path: str, docstring_map: dict) -> None:
+    """Insert the generated docstrings into the file."""
+    with open(file_path, "r") as file:
+        content = file.read()
+
+    substitute_docstrings(content, docstring_map)
+
+    with open(file_path, "w") as file:
+        file.write(content)
 
 
 def generate_docstring(
