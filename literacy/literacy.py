@@ -77,12 +77,13 @@ def compute_cost(function_source: str) -> float:
 
 def substitute_docstrings(function_source: str, docstring_map: dict) -> str:
     """Replace the docstrings in the function source with the generated docstrings."""
+    new_source = str(function_source)
     for function_name, docstring in docstring_map.items():
         pattern = rf"(def {function_name}\(.*\):)"
-        replacement = rf"\1\n    \"\"\"{docstring}\"\"\""
+        replacement = rf'\1\n    """{docstring}"""'
 
-        content = re.sub(pattern, replacement, content, flags=re.MULTILINE)
-    return function_source
+        new_source = re.sub(pattern, replacement, new_source, flags=re.MULTILINE)
+    return new_source
 
 
 def insert_docstrings(file_path: str, docstring_map: dict) -> None:
@@ -90,7 +91,7 @@ def insert_docstrings(file_path: str, docstring_map: dict) -> None:
     with open(file_path, "r") as file:
         content = file.read()
 
-    substitute_docstrings(content, docstring_map)
+    content = substitute_docstrings(content, docstring_map)
 
     with open(file_path, "w") as file:
         file.write(content)
