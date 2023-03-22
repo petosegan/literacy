@@ -21,7 +21,7 @@ import os
 import subprocess
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from display import FileStatusDisplay, Status
+from .display import FileStatusDisplay, Status
 import ast
 import sys
 from typing import Tuple, Optional
@@ -110,7 +110,7 @@ def generate_docstring(
         'Add two integers together and return the result.'
     """
     logger.debug("Generating docstring for %s", function_name)
-    prompt = Path("prompt.txt").read_text() + function_signature
+    prompt = Path("../config/prompt.txt").read_text() + function_signature
     logger.debug(prompt)
     try:
         response = openai.ChatCompletion.create(
@@ -300,7 +300,7 @@ def find_git_root(path: str) -> Optional[str]:
         return find_git_root(parent_dir)
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("codebase_directory", help="The directory to scan")
     parser.add_argument("--dryrun", action="store_true", help="Compute costs only")
@@ -314,3 +314,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     configure_logging_level(args.verbosity)
     scan_codebase(args.codebase_directory, dryrun=args.dryrun)
+
+
+if __name__ == "__main__":
+    main()
