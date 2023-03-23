@@ -94,7 +94,7 @@ export OPENAI_API_KEY="your_openai_api_key"
 Run the script with the codebase directory as the argument:
 
 ```bash
-python literacy.py /path/to/your/codebase
+python -m literacy.literacy /path/to/your/codebase
 ```
 
 Replace /path/to/your/codebase with the path to the directory containing your Python codebase.
