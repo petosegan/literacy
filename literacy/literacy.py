@@ -75,11 +75,15 @@ def compute_cost(function_source: str) -> float:
     return n_tokens * TOKEN_COST * COST_MULTIPLER
 
 
+### I think the right solution here is a function with a regex that captures
+### the function name, then a group for the function signature, then the function
+### body, and then we insert the docstring in front of the function body.
 def substitute_docstrings(function_source: str, docstring_map: dict) -> str:
     """Replace the docstrings in the function source with the generated docstrings."""
     new_source = str(function_source)
     for function_name, docstring in docstring_map.items():
-        pattern = rf"(def {function_name}\(.*\):)"
+        # pattern = rf"(def {function_name}\(.*\):)"
+        pattern = rf"(def {function_name}\(.*\)(\s*->\s*[\w\[\], \.]*|):)"
         replacement = rf'\1\n    """{docstring}"""'
 
         new_source = re.sub(pattern, replacement, new_source, flags=re.MULTILINE)
@@ -91,10 +95,12 @@ def insert_docstrings(file_path: str, docstring_map: dict) -> None:
     with open(file_path, "r") as file:
         content = file.read()
 
-    content = substitute_docstrings(content, docstring_map)
+    new_content = substitute_docstrings(content, docstring_map)
+    if new_content == content:
+        raise ValueError("No docstrings were inserted.")
 
     with open(file_path, "w") as file:
-        file.write(content)
+        file.write(new_content)
 
 
 def generate_docstring(
@@ -221,13 +227,15 @@ def process_file(filename: str, dryrun: bool = False) -> float:
             return None, None, None, cost
         docstring, cost = generate_docstring(function.name, function_source)
         docstring = docstring.replace('"', "")
-        new_signature = f'{old_signature}\n    """{docstring}"""'
-        return (function.name, old_signature, new_signature, cost)
+        # new_signature = f'{old_signature}\n    """{docstring}"""'
+        return (function.name, docstring, cost)
 
     # Display function names in yellow
     display = FileStatusDisplay(filename, [function.name for function in functions])
     display.display()
     total_cost = 0
+
+    docstring_map = {}
 
     with ThreadPoolExecutor() as executor:
         futures = [
@@ -237,22 +245,20 @@ def process_file(filename: str, dryrun: bool = False) -> float:
 
         for future in as_completed(futures):
             try:
-                function_name, old_signature, new_signature, cost = future.result()
+                function_name, docstring, cost = future.result()
             except TimeoutError as e:
                 function_name = e.args[0]
                 display.update(function_name, Status.FAILED)
             else:
-                if old_signature and new_signature:
-                    result = result.replace(old_signature, new_signature)
+                docstring_map[function_name] = docstring
 
                 display.update(function_name, Status.FINISHED)
                 total_cost += cost
 
     display.finish()
     logger.info("File cost: $%.4f", total_cost)
-    if not dryrun:
-        with open(filename, "w") as file:
-            file.write(result)
+    if not dryrun and docstring_map:
+        insert_docstrings(filename, docstring_map)
     return total_cost
 
 
